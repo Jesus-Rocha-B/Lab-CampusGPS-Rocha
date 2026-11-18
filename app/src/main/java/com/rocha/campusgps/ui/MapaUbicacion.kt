@@ -2,8 +2,10 @@ package com.rocha.campusgps.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -24,7 +26,7 @@ fun MapaUbicacion(
         position = CameraPosition.fromLatLngZoom(LatLng(-12.0464, -77.0428), 12f)
     }
 
-    // TODO 1: LaunchedEffect(estado): si es Lista, animar la cámara (zoom 16f)
+    // LaunchedEffect(estado): si es Lista, animar la cámara (zoom 16f)
     LaunchedEffect(estado) {
         if (estado is UbicacionUi.Lista) {
             camara.animate(
@@ -37,7 +39,7 @@ fun MapaUbicacion(
     }
 
     GoogleMap(modifier = modifier, cameraPositionState = camara) {
-        // TODO 2: si el estado es Lista, un Marker "Estás aquí"
+        // Marcador propio "Estás aquí" en rojo (por defecto)
         if (estado is UbicacionUi.Lista) {
             Marker(
                 state = rememberUpdatedMarkerState(
@@ -46,6 +48,19 @@ fun MapaUbicacion(
                 title = "Estás aquí"
             )
         }
-        // TODO 3 (Paso 4): un Marker por cada lugar
+
+        // Marcadores de los lugares del campus en azul (HUE_AZURE)
+        lugares.forEach { item ->
+            key(item.lugar.id) {
+                Marker(
+                    state = rememberUpdatedMarkerState(
+                        position = LatLng(item.lugar.latitud, item.lugar.longitud)
+                    ),
+                    title = item.lugar.nombre,
+                    snippet = item.lugar.categoria,
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                )
+            }
+        }
     }
 }
