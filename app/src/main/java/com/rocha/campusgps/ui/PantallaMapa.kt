@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -83,9 +84,9 @@ fun PantallaMapa(vm: MapaViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(padding)
         ) {
+            // Mapa arriba ocupando el espacio libre
             MapaUbicacion(
                 estado = estado,
                 lugares = lugares,
@@ -95,10 +96,13 @@ fun PantallaMapa(vm: MapaViewModel) {
                     .weight(1f)
             )
 
+            // Controles centrales
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Button(
                     onClick = { alPulsar() },
@@ -108,30 +112,31 @@ fun PantallaMapa(vm: MapaViewModel) {
                 }
 
                 when (val e = estado) {
-                    UbicacionUi.Inicial -> {
-                        Text(
-                            text = "Pulsa el botón para empezar",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-
                     UbicacionUi.Buscando -> {
-                        CircularProgressIndicator()
-                    }
-
-                    is UbicacionUi.Lista -> {
-                        Text("Latitud: ${"%.4f".format(e.posicion.latitud)}")
-                        Text("Longitud: ${"%.4f".format(e.posicion.longitud)}")
+                        CircularProgressIndicator(modifier = Modifier.padding(vertical = 4.dp))
                     }
 
                     is UbicacionUi.Error -> {
                         Text(
                             text = e.mensaje,
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
+
+                    else -> Unit
                 }
             }
+
+            // Lista fija abajo (220.dp)
+            ListaLugares(
+                lugares = lugares,
+                seleccionado = seleccionado,
+                onSeleccionar = { vm.seleccionar(it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+            )
         }
     }
 }
