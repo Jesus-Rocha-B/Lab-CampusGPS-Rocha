@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.rocha.campusgps.data.LugaresRepository
 import com.rocha.campusgps.data.UbicacionRepository
 import com.rocha.campusgps.model.LugarConDistancia
+import com.rocha.campusgps.model.Posicion
 import com.rocha.campusgps.model.UbicacionUi
+import com.rocha.campusgps.util.distanciaMetros
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,10 +35,19 @@ class MapaViewModel(
             ubicacionRepo.obtenerPosicion()
                 .onSuccess {
                     _estado.value = UbicacionUi.Lista(it)
-                    // TODO Paso 5: actualizarDistancias(it)
+                    actualizarDistancias(it)
                 }
                 .onFailure { _estado.value = UbicacionUi.Error(mensajeDe(it)) }
         }
+    }
+
+    private fun actualizarDistancias(pos: Posicion) {
+        val listaConDistancias = lugaresRepo.obtenerLugares().map { lugar ->
+            val metros = distanciaMetros(pos, lugar)
+            LugarConDistancia(lugar, metros)
+        }.sortedBy { it.metros ?: Float.MAX_VALUE }
+
+        _lugares.value = listaConDistancias
     }
 
     fun permisoDenegado() {
