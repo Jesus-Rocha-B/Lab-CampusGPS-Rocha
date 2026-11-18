@@ -26,9 +26,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rocha.campusgps.model.LugarConDistancia
-import com.rocha.campusgps.ui.theme.CampusBlue
+import com.rocha.campusgps.ui.theme.TecsupBorder
+import com.rocha.campusgps.ui.theme.TecsupCyan
+import com.rocha.campusgps.ui.theme.TecsupCyanContainer
+import com.rocha.campusgps.ui.theme.TecsupCyanDark
+import com.rocha.campusgps.ui.theme.TecsupTextPrimary
+import com.rocha.campusgps.ui.theme.TecsupTextSecondary
 import com.rocha.campusgps.util.formatearDistancia
 
 @Composable
@@ -39,8 +45,8 @@ fun ListaLugares(
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        modifier = modifier.background(Color.White),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(lugares, key = { it.lugar.id }) { item ->
@@ -52,18 +58,14 @@ fun ListaLugares(
                     .clickable { onSeleccionar(item.lugar.id) },
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (esSeleccionado) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    }
+                    containerColor = if (esSeleccionado) TecsupCyanContainer else Color.White
                 ),
                 border = if (esSeleccionado) {
-                    BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+                    BorderStroke(1.5.dp, TecsupCyan)
                 } else {
-                    BorderStroke(0.5.dp, Color.LightGray.copy(alpha = 0.5f))
+                    BorderStroke(1.dp, TecsupBorder)
                 },
-                elevation = CardDefaults.cardElevation(defaultElevation = if (esSeleccionado) 4.dp else 1.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = if (esSeleccionado) 2.dp else 0.5.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -71,11 +73,14 @@ fun ListaLugares(
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Punto indicador de color azul
+                    // Punto indicador celeste Tecsup
                     Box(
                         modifier = Modifier
                             .size(10.dp)
-                            .background(CampusBlue, CircleShape)
+                            .background(
+                                if (esSeleccionado) TecsupCyan else TecsupCyan.copy(alpha = 0.5f),
+                                CircleShape
+                            )
                     )
 
                     Spacer(modifier = Modifier.width(12.dp))
@@ -83,22 +88,27 @@ fun ListaLugares(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = item.lugar.nombre,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TecsupTextPrimary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = item.lugar.categoria,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
+                            color = TecsupTextSecondary
                         )
                     }
+
+                    Spacer(modifier = Modifier.width(12.dp))
 
                     val textoDistancia = item.metros?.let { formatearDistancia(it) } ?: "Sin calcular"
                     Text(
                         text = textoDistancia,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (item.metros != null) MaterialTheme.colorScheme.primary else Color.Gray
+                        color = if (item.metros != null) TecsupCyanDark else TecsupTextSecondary
                     )
                 }
             }
