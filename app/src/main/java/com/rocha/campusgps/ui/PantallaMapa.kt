@@ -1,8 +1,10 @@
 package com.rocha.campusgps.ui
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -23,16 +25,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -56,6 +62,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.rocha.campusgps.R
 import com.rocha.campusgps.model.UbicacionUi
@@ -78,13 +86,17 @@ fun PantallaMapa(vm: MapaViewModel) {
     val radioSeleccionado by vm.radioSeleccionado.collectAsState()
     val seleccionado by vm.seleccionado.collectAsState()
     val masCercano by vm.masCercano.collectAsState()
+    val siguiendoEnVivo by vm.siguiendoEnVivo.collectAsState()
     val contexto = LocalContext.current
+
+    // Diálogo de confirmación para seguimiento en vivo
+    var mostrarDialogoSeguimiento by remember { mutableStateOf(false) }
 
     // Estado interactivo del panel inferior (subir y bajar)
     var expandido by remember { mutableStateOf(true) }
 
     val alturaSpacer by animateDpAsState(
-        targetValue = if (expandido) 360.dp else 165.dp,
+        targetValue = if (expandido) 325.dp else 135.dp,
         animationSpec = tween(durationMillis = 300),
         label = "alturaSpacer"
     )
@@ -106,7 +118,7 @@ fun PantallaMapa(vm: MapaViewModel) {
         }
     }
 
-    fun alPulsar() {
+    fun tienePermiso(): Boolean {
         val fine = ContextCompat.checkSelfPermission(
             contexto,
             Manifest.permission.ACCESS_FINE_LOCATION
@@ -115,8 +127,24 @@ fun PantallaMapa(vm: MapaViewModel) {
             contexto,
             Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
+        return fine || coarse
+    }
 
-        if (fine || coarse) {
+    fun gpsEstaEncendido(): Boolean {
+        val lm = contexto.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return false
+        return lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+               lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+
+    fun abrirAjustesGps() {
+        val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        contexto.startActivity(intent)
+    }
+
+    fun alPulsar() {
+        if (tienePermiso()) {
             vm.buscar()
         } else {
             lanzador.launch(
@@ -125,6 +153,21 @@ fun PantallaMapa(vm: MapaViewModel) {
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 )
             )
+        }
+    }
+
+    fun alPulsarSeguimiento() {
+        if (!tienePermiso()) {
+            lanzador.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        } else if (!gpsEstaEncendido()) {
+            abrirAjustesGps()
+        } else {
+            vm.iniciarSeguimiento()
         }
     }
 
@@ -138,6 +181,359 @@ fun PantallaMapa(vm: MapaViewModel) {
         contexto.startActivity(intent)
     }
 
+    // Diálogo interactivo de confirmación para Seguimiento en Vivo
+    if (mostrarDialogoSeguimiento) {
+        Dialog(onDismissRequest = { mostrarDialogoSeguimiento = false }) {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White,
+                shadowElevation = 8.dp,
+                border = BorderStroke(1.dp, TecsupBorder),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    when {
+                        // Caso 1: Seguimiento ya está activo -> Pregunta para detener
+                        siguiendoEnVivo -> {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = Color(0xFFFEF2F2),
+                                    border = BorderStroke(1.5.dp, Color(0xFFEF4444).copy(alpha = 0.4f)),
+                                    modifier = Modifier.size(42.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_radar_live),
+                                            contentDescription = null,
+                                            tint = Color(0xFFEF4444),
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = "¿Detener seguimiento?",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TecsupTextPrimary
+                                )
+                            }
+
+                            Text(
+                                text = "El seguimiento continuo está activo actualmente. Si lo detienes, se suspenderán las actualizaciones automáticas para ahorrar batería en tu dispositivo.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TecsupTextSecondary,
+                                lineHeight = 20.sp,
+                                textAlign = TextAlign.Justify
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { mostrarDialogoSeguimiento = false },
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.dp, TecsupBorder),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(42.dp)
+                                ) {
+                                    Text(
+                                        text = "Continuar",
+                                        color = TecsupTextSecondary,
+                                        fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        mostrarDialogoSeguimiento = false
+                                        vm.detenerSeguimiento()
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFFEF4444),
+                                        contentColor = Color.White
+                                    ),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(42.dp)
+                                ) {
+                                    Text(
+                                        text = "Detener",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+
+                        // Caso 2: Falta permiso de ubicación -> Pide permiso primero
+                        !tienePermiso() -> {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = TecsupCyanSurface,
+                                    border = BorderStroke(1.5.dp, TecsupBorder),
+                                    modifier = Modifier.size(42.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_radar_live),
+                                            contentDescription = null,
+                                            tint = TecsupCyanDark,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = "Permiso de ubicación",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TecsupTextPrimary
+                                )
+                            }
+
+                            Text(
+                                text = "Para iniciar el seguimiento en vivo de CampusGPS, primero debes conceder el permiso de acceso a la ubicación de tu dispositivo.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TecsupTextSecondary,
+                                lineHeight = 20.sp,
+                                textAlign = TextAlign.Justify
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { mostrarDialogoSeguimiento = false },
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.dp, TecsupBorder),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(42.dp)
+                                ) {
+                                    Text(
+                                        text = "Cancelar",
+                                        color = TecsupTextSecondary,
+                                        fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        mostrarDialogoSeguimiento = false
+                                        lanzador.launch(
+                                            arrayOf(
+                                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                                Manifest.permission.ACCESS_COARSE_LOCATION
+                                            )
+                                        )
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = TecsupCyan,
+                                        contentColor = Color.White
+                                    ),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(42.dp)
+                                ) {
+                                    Text(
+                                        text = "Dar permiso",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+
+                        // Caso 3: El GPS del teléfono está apagado -> Pide activar ubicación
+                        !gpsEstaEncendido() -> {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = TecsupCyanSurface,
+                                    border = BorderStroke(1.5.dp, TecsupBorder),
+                                    modifier = Modifier.size(42.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_radar_live),
+                                            contentDescription = null,
+                                            tint = TecsupCyanDark,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = "Activa tu ubicación",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TecsupTextPrimary
+                                )
+                            }
+
+                            Text(
+                                text = "El GPS de tu dispositivo está apagado. Para que el mapa pueda seguirte en tiempo real mientras caminas por Tecsup, primero debes encender la ubicación en los ajustes de tu teléfono.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TecsupTextSecondary,
+                                lineHeight = 20.sp,
+                                textAlign = TextAlign.Justify
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { mostrarDialogoSeguimiento = false },
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.dp, TecsupBorder),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(42.dp)
+                                ) {
+                                    Text(
+                                        text = "Cancelar",
+                                        color = TecsupTextSecondary,
+                                        fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        mostrarDialogoSeguimiento = false
+                                        abrirAjustesGps()
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = TecsupCyan,
+                                        contentColor = Color.White
+                                    ),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(42.dp)
+                                ) {
+                                    Text(
+                                        text = "Activar GPS",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+
+                        // Caso 4: Todo listo (permiso y GPS encendidos) -> Confirmar inicio
+                        else -> {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = TecsupCyanSurface,
+                                    border = BorderStroke(1.5.dp, TecsupBorder),
+                                    modifier = Modifier.size(42.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_radar_live),
+                                            contentDescription = null,
+                                            tint = TecsupCyanDark,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = "¿Activar seguimiento en vivo?",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TecsupTextPrimary
+                                )
+                            }
+
+                            Text(
+                                text = "El GPS actualizará tu ubicación continua en tiempo real cada 3 segundos. Tu posición y las distancias a todos los lugares de Tecsup se recalcularán automáticamente mientras caminas.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TecsupTextSecondary,
+                                lineHeight = 20.sp,
+                                textAlign = TextAlign.Justify
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { mostrarDialogoSeguimiento = false },
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.dp, TecsupBorder),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(42.dp)
+                                ) {
+                                    Text(
+                                        text = "Cancelar",
+                                        color = TecsupTextSecondary,
+                                        fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        mostrarDialogoSeguimiento = false
+                                        vm.iniciarSeguimiento()
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = TecsupCyan,
+                                        contentColor = Color.White
+                                    ),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(42.dp)
+                                ) {
+                                    Text(
+                                        text = "Activar",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -145,7 +541,7 @@ fun PantallaMapa(vm: MapaViewModel) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.logo_campusgps),
@@ -155,6 +551,30 @@ fun PantallaMapa(vm: MapaViewModel) {
                                 .padding(start = 4.dp),
                             contentScale = ContentScale.Fit
                         )
+
+                        // Icono interactivo circular a la derecha de CampusGPS (solo icono, sin puntos extra)
+                        Surface(
+                            onClick = { mostrarDialogoSeguimiento = true },
+                            shape = CircleShape,
+                            color = if (siguiendoEnVivo) Color(0xFFDCFCE7) else TecsupCyanSurface,
+                            border = BorderStroke(
+                                1.5.dp,
+                                if (siguiendoEnVivo) Color(0xFF22C55E) else TecsupBorder
+                            ),
+                            modifier = Modifier.padding(end = 6.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.size(38.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_radar_live),
+                                    contentDescription = "Seguimiento en vivo",
+                                    tint = if (siguiendoEnVivo) Color(0xFF16A34A) else TecsupCyanDark,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -300,44 +720,65 @@ fun PantallaMapa(vm: MapaViewModel) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        // Botón principal
-                        Button(
-                            onClick = { alPulsar() },
-                            enabled = estado !is UbicacionUi.Buscando,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = TecsupCyan,
-                                contentColor = Color.White,
-                                disabledContainerColor = TecsupCyan.copy(alpha = 0.5f),
-                                disabledContentColor = Color.White.copy(alpha = 0.8f)
-                            ),
-                            modifier = Modifier.fillMaxWidth()
+                        // Fila de botones principales en una sola línea
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "Obtener mi ubicación",
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                            // Botón 1: Obtener mi ubicación
+                            Button(
+                                onClick = { alPulsar() },
+                                enabled = estado !is UbicacionUi.Buscando,
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = TecsupCyan,
+                                    contentColor = Color.White,
+                                    disabledContainerColor = TecsupCyan.copy(alpha = 0.5f),
+                                    disabledContentColor = Color.White.copy(alpha = 0.8f)
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(44.dp)
+                            ) {
+                                Text(
+                                    text = "Obtener ubicación",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
 
-                        // Botón secundario: Ir al más cercano
-                        OutlinedButton(
-                            onClick = { masCercano?.let { vm.seleccionar(it.id) } },
-                            enabled = masCercano != null,
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(
-                                1.5.dp,
-                                if (masCercano != null) TecsupCyan else TecsupBorder
-                            ),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = TecsupCyanDark,
-                                disabledContentColor = Color.Gray
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Ir al más cercano",
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            // Botón 2: Ir al más cercano
+                            OutlinedButton(
+                                onClick = { masCercano?.let { vm.seleccionar(it.id) } },
+                                enabled = masCercano != null,
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
+                                border = BorderStroke(
+                                    1.5.dp,
+                                    if (masCercano != null) TecsupCyan else TecsupBorder
+                                ),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = TecsupCyanDark,
+                                    disabledContentColor = Color.Gray
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(44.dp)
+                            ) {
+                                Text(
+                                    text = "Ir al más cercano",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
 
                         // Texto: Más cercano estrictamente en una sola línea

@@ -10,10 +10,12 @@ import com.rocha.campusgps.model.Posicion
 import com.rocha.campusgps.model.TipoError
 import com.rocha.campusgps.model.UbicacionUi
 import com.rocha.campusgps.util.distanciaMetros
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -26,6 +28,11 @@ class MapaViewModel(
 
     private val _estado = MutableStateFlow<UbicacionUi>(UbicacionUi.Inicial)
     val estado: StateFlow<UbicacionUi> = _estado.asStateFlow()
+
+    // Mejora 4: Seguimiento en vivo continuo mediante Coroutines y callbackFlow
+    private var trabajoSeguimiento: Job? = null
+    private val _siguiendoEnVivo = MutableStateFlow(false)
+    val siguiendoEnVivo: StateFlow<Boolean> = _siguiendoEnVivo.asStateFlow()
 
     private val _lugares = MutableStateFlow(
         lugaresRepo.obtenerLugares().map { LugarConDistancia(it, null) }
@@ -63,6 +70,7 @@ class MapaViewModel(
     val seleccionado: StateFlow<Int?> = _seleccionado.asStateFlow()
 
     fun buscar() {
+        detenerSeguimiento()
         if (!ubicacionRepo.playServicesDisponible()) {
             _estado.value = UbicacionUi.Error(
                 mensaje = "Este dispositivo no tiene Google Play Services.",
@@ -85,6 +93,54 @@ class MapaViewModel(
                     )
                 }
         }
+    }
+
+    fun alternarSeguimientoEnVivo() {
+        if (_siguiendoEnVivo.value) {
+            detenerSeguimiento()
+        } else {
+            iniciarSeguimiento()
+        }
+    }
+
+    fun iniciarSeguimiento() {
+        if (!ubicacionRepo.playServicesDisponible()) {
+            _estado.value = UbicacionUi.Error(
+                mensaje = "Este dispositivo no tiene Google Play Services.",
+                tipo = TipoError.SIN_PLAY_SERVICES
+            )
+            return
+        }
+
+        detenerSeguimiento()
+        _estado.value = UbicacionUi.Buscando
+
+        trabajoSeguimiento = viewModelScope.launch {
+            ubicacionRepo.obtenerPosicionesEnVivo()
+                .catch { e ->
+                    _siguiendoEnVivo.value = false
+                    _estado.value = UbicacionUi.Error(
+                        mensaje = mensajeDe(e),
+                        tipo = tipoErrorDe(e)
+                    )
+                }
+                .collect { pos ->
+                    _siguiendoEnVivo.value = true
+                    _estado.value = UbicacionUi.Lista(pos)
+                    actualizarDistancias(pos)
+                }
+        }
+    }
+
+    fun detenerSeguimiento() {
+        trabajoSeguimiento?.cancel()
+        trabajoSeguimiento = null
+        _siguiendoEnVivo.value = false
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        detenerSeguimiento()
     }
 
     private fun actualizarDistancias(pos: Posicion) {
