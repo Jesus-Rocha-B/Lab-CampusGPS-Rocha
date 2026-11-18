@@ -12,6 +12,7 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
+import com.rocha.campusgps.model.Lugar
 import com.rocha.campusgps.model.LugarConDistancia
 import com.rocha.campusgps.model.UbicacionUi
 
@@ -19,6 +20,7 @@ import com.rocha.campusgps.model.UbicacionUi
 fun MapaUbicacion(
     estado: UbicacionUi,
     lugares: List<LugarConDistancia>,
+    masCercano: Lugar?,
     seleccionado: Int?,
     modifier: Modifier = Modifier
 ) {
@@ -62,25 +64,32 @@ fun MapaUbicacion(
             )
         }
 
-        // Marcadores de los lugares del campus en azul (HUE_AZURE)
+        // Marcadores de los lugares del campus:
+        // El más cercano en verde (HUE_GREEN); los demás en azul (HUE_AZURE)
         lugares.forEach { item ->
             key(item.lugar.id) {
                 val markerState = rememberUpdatedMarkerState(
                     position = LatLng(item.lugar.latitud, item.lugar.longitud)
                 )
 
-                // Si este lugar está seleccionado, mostramos su ventana de información
                 LaunchedEffect(seleccionado) {
                     if (item.lugar.id == seleccionado) {
                         markerState.showInfoWindow()
                     }
                 }
 
+                val esMasCercano = item.lugar.id == masCercano?.id
+                val color = if (esMasCercano) {
+                    BitmapDescriptorFactory.HUE_GREEN
+                } else {
+                    BitmapDescriptorFactory.HUE_AZURE
+                }
+
                 Marker(
                     state = markerState,
                     title = item.lugar.nombre,
                     snippet = item.lugar.categoria,
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                    icon = BitmapDescriptorFactory.defaultMarker(color)
                 )
             }
         }

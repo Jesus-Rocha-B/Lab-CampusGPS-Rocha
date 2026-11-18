@@ -14,6 +14,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -24,9 +25,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.rocha.campusgps.model.UbicacionUi
+import com.rocha.campusgps.util.formatearDistancia
 import com.rocha.campusgps.viewmodel.MapaViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,6 +38,7 @@ fun PantallaMapa(vm: MapaViewModel) {
     val estado by vm.estado.collectAsState()
     val lugares by vm.lugares.collectAsState()
     val seleccionado by vm.seleccionado.collectAsState()
+    val masCercano by vm.masCercano.collectAsState()
     val contexto = LocalContext.current
 
     val lanzador = rememberLauncherForActivityResult(
@@ -86,10 +90,11 @@ fun PantallaMapa(vm: MapaViewModel) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Mapa arriba ocupando el espacio libre
+            // Mapa arriba ocupando el espacio libre (weight 1f)
             MapaUbicacion(
                 estado = estado,
                 lugares = lugares,
+                masCercano = masCercano,
                 seleccionado = seleccionado,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -100,15 +105,35 @@ fun PantallaMapa(vm: MapaViewModel) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                // Botón principal
                 Button(
                     onClick = { alPulsar() },
                     enabled = estado !is UbicacionUi.Buscando
                 ) {
                     Text("Obtener mi ubicación")
+                }
+
+                // Botón secundario: Ir al más cercano
+                OutlinedButton(
+                    onClick = { masCercano?.let { vm.seleccionar(it.id) } },
+                    enabled = masCercano != null
+                ) {
+                    Text("Ir al más cercano")
+                }
+
+                // Texto: Más cercano: nombre (distancia)
+                masCercano?.let { cercano ->
+                    val dist = lugares.firstOrNull { it.lugar.id == cercano.id }?.metros
+                    val textoDist = dist?.let { " (${formatearDistancia(it)})" }.orEmpty()
+                    Text(
+                        text = "Más cercano: ${cercano.nombre}$textoDist",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
 
                 when (val e = estado) {
