@@ -63,6 +63,7 @@ import com.rocha.campusgps.ui.theme.TecsupBorder
 import com.rocha.campusgps.ui.theme.TecsupCyan
 import com.rocha.campusgps.ui.theme.TecsupCyanContainer
 import com.rocha.campusgps.ui.theme.TecsupCyanDark
+import com.rocha.campusgps.ui.theme.TecsupCyanSurface
 import com.rocha.campusgps.ui.theme.TecsupTextPrimary
 import com.rocha.campusgps.ui.theme.TecsupTextSecondary
 import com.rocha.campusgps.util.formatearDistancia
@@ -74,6 +75,7 @@ fun PantallaMapa(vm: MapaViewModel) {
     val estado by vm.estado.collectAsState()
     val lugaresFiltrados by vm.lugaresFiltrados.collectAsState()
     val categoriaSeleccionada by vm.categoriaSeleccionada.collectAsState()
+    val radioSeleccionado by vm.radioSeleccionado.collectAsState()
     val seleccionado by vm.seleccionado.collectAsState()
     val masCercano by vm.masCercano.collectAsState()
     val contexto = LocalContext.current
@@ -174,6 +176,7 @@ fun PantallaMapa(vm: MapaViewModel) {
                     lugares = lugaresFiltrados,
                     masCercano = masCercano,
                     seleccionado = seleccionado,
+                    radio = radioSeleccionado,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
@@ -247,6 +250,45 @@ fun PantallaMapa(vm: MapaViewModel) {
                                     selectedLabelColor = TecsupCyanDark
                                 )
                             )
+                        }
+                    }
+
+                    // Selector de radio interactivo cuando la ubicación ya fue obtenida
+                    if (estado is UbicacionUi.Lista) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Radio:",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = TecsupTextSecondary
+                            )
+                            vm.radiosDisponibles.forEach { r ->
+                                val esActivo = r == radioSeleccionado
+                                val etiqueta = r?.let { "${it}m" } ?: "Todo"
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (esActivo) TecsupCyan else TecsupCyanSurface,
+                                    border = BorderStroke(
+                                        1.dp,
+                                        if (esActivo) TecsupCyan else TecsupBorder
+                                    ),
+                                    modifier = Modifier.clickable { vm.seleccionarRadio(r) }
+                                ) {
+                                    Text(
+                                        text = etiqueta,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = if (esActivo) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (esActivo) Color.White else TecsupCyanDark,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
                         }
                     }
 

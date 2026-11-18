@@ -27,6 +27,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
@@ -37,6 +38,7 @@ import com.rocha.campusgps.model.Lugar
 import com.rocha.campusgps.model.LugarConDistancia
 import com.rocha.campusgps.model.UbicacionUi
 import com.rocha.campusgps.ui.theme.TecsupBorder
+import com.rocha.campusgps.ui.theme.TecsupCyan
 import com.rocha.campusgps.ui.theme.TecsupCyanDark
 import kotlinx.coroutines.launch
 
@@ -46,6 +48,7 @@ fun MapaUbicacion(
     lugares: List<LugarConDistancia>,
     masCercano: Lugar?,
     seleccionado: Int?,
+    radio: Int? = null,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -93,6 +96,17 @@ fun MapaUbicacion(
                 myLocationButtonEnabled = estado is UbicacionUi.Lista
             )
         ) {
+            // Mejora 3: Círculo vectorial de radio de cercanía cuando el usuario tiene ubicación y radio activo
+            if (estado is UbicacionUi.Lista && radio != null) {
+                Circle(
+                    center = LatLng(estado.posicion.latitud, estado.posicion.longitud),
+                    radius = radio.toDouble(),
+                    fillColor = TecsupCyan.copy(alpha = 0.15f),
+                    strokeColor = TecsupCyan,
+                    strokeWidth = 3f
+                )
+            }
+
             // Marcador propio "Estás aquí" en rojo (por defecto)
             if (estado is UbicacionUi.Lista) {
                 Marker(

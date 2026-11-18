@@ -44,12 +44,27 @@ fun ListaLugares(
     onSeleccionar: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LazyColumn(
-        modifier = modifier.background(Color.White),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(lugares, key = { it.lugar.id }) { item ->
+    if (lugares.isEmpty()) {
+        Box(
+            modifier = modifier
+                .background(Color.White)
+                .fillMaxWidth()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No se encontraron lugares en este rango",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TecsupTextSecondary
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier.background(Color.White),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(lugares, key = { it.lugar.id }) { item ->
             val esSeleccionado = item.lugar.id == seleccionado
 
             Card(
@@ -114,4 +129,5 @@ fun ListaLugares(
             }
         }
     }
+}
 }
