@@ -6,9 +6,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,6 +32,8 @@ import com.rocha.campusgps.viewmodel.MapaViewModel
 @Composable
 fun PantallaMapa(vm: MapaViewModel) {
     val estado by vm.estado.collectAsState()
+    val lugares by vm.lugares.collectAsState()
+    val seleccionado by vm.seleccionado.collectAsState()
     val contexto = LocalContext.current
 
     val lanzador = rememberLauncherForActivityResult(
@@ -82,41 +83,53 @@ fun PantallaMapa(vm: MapaViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(padding),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Button(
-                onClick = { alPulsar() },
-                enabled = estado !is UbicacionUi.Buscando
+            MapaUbicacion(
+                estado = estado,
+                lugares = lugares,
+                seleccionado = seleccionado,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            )
+
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Obtener mi ubicación")
-            }
-
-            when (val e = estado) {
-                UbicacionUi.Inicial -> {
-                    Text(
-                        text = "Pulsa el botón para empezar",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                Button(
+                    onClick = { alPulsar() },
+                    enabled = estado !is UbicacionUi.Buscando
+                ) {
+                    Text("Obtener mi ubicación")
                 }
 
-                UbicacionUi.Buscando -> {
-                    Spacer(Modifier.height(8.dp))
-                    CircularProgressIndicator()
-                }
+                when (val e = estado) {
+                    UbicacionUi.Inicial -> {
+                        Text(
+                            text = "Pulsa el botón para empezar",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
 
-                is UbicacionUi.Lista -> {
-                    Text("Latitud: ${"%.4f".format(e.posicion.latitud)}")
-                    Text("Longitud: ${"%.4f".format(e.posicion.longitud)}")
-                }
+                    UbicacionUi.Buscando -> {
+                        CircularProgressIndicator()
+                    }
 
-                is UbicacionUi.Error -> {
-                    Text(
-                        text = e.mensaje,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    is UbicacionUi.Lista -> {
+                        Text("Latitud: ${"%.4f".format(e.posicion.latitud)}")
+                        Text("Longitud: ${"%.4f".format(e.posicion.longitud)}")
+                    }
+
+                    is UbicacionUi.Error -> {
+                        Text(
+                            text = e.mensaje,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }
