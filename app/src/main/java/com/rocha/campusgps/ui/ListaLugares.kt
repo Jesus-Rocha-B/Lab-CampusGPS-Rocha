@@ -33,6 +33,7 @@ import com.rocha.campusgps.ui.theme.TecsupBorder
 import com.rocha.campusgps.ui.theme.TecsupCyan
 import com.rocha.campusgps.ui.theme.TecsupCyanContainer
 import com.rocha.campusgps.ui.theme.TecsupCyanDark
+import com.rocha.campusgps.ui.theme.TecsupCyanLight
 import com.rocha.campusgps.ui.theme.TecsupTextPrimary
 import com.rocha.campusgps.ui.theme.TecsupTextSecondary
 import com.rocha.campusgps.util.formatearDistancia
@@ -42,12 +43,18 @@ fun ListaLugares(
     lugares: List<LugarConDistancia>,
     seleccionado: Int?,
     onSeleccionar: (Int) -> Unit,
+    modoOscuro: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val fondoLista = if (modoOscuro) Color(0xFF1E293B) else Color.White
+    val colorBordeCard = if (modoOscuro) Color(0xFF334155) else TecsupBorder
+    val colorTextoPrincipal = if (modoOscuro) Color(0xFFF8FAFC) else TecsupTextPrimary
+    val colorTextoSecundario = if (modoOscuro) Color(0xFF94A3B8) else TecsupTextSecondary
+
     if (lugares.isEmpty()) {
         Box(
             modifier = modifier
-                .background(Color.White)
+                .background(fondoLista)
                 .fillMaxWidth()
                 .padding(24.dp),
             contentAlignment = Alignment.Center
@@ -55,17 +62,24 @@ fun ListaLugares(
             Text(
                 text = "No se encontraron lugares en este rango",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TecsupTextSecondary
+                color = colorTextoSecundario
             )
         }
     } else {
         LazyColumn(
-            modifier = modifier.background(Color.White),
+            modifier = modifier.background(fondoLista),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(lugares, key = { it.lugar.id }) { item ->
             val esSeleccionado = item.lugar.id == seleccionado
+
+            val fondoCard = when {
+                esSeleccionado && modoOscuro -> Color(0xFF0F172A)
+                esSeleccionado && !modoOscuro -> TecsupCyanContainer
+                !esSeleccionado && modoOscuro -> Color(0xFF1E293B)
+                else -> Color.White
+            }
 
             Card(
                 modifier = Modifier
@@ -73,12 +87,12 @@ fun ListaLugares(
                     .clickable { onSeleccionar(item.lugar.id) },
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (esSeleccionado) TecsupCyanContainer else Color.White
+                    containerColor = fondoCard
                 ),
                 border = if (esSeleccionado) {
                     BorderStroke(1.5.dp, TecsupCyan)
                 } else {
-                    BorderStroke(1.dp, TecsupBorder)
+                    BorderStroke(1.dp, colorBordeCard)
                 },
                 elevation = CardDefaults.cardElevation(defaultElevation = if (esSeleccionado) 2.dp else 0.5.dp)
             ) {
@@ -105,14 +119,14 @@ fun ListaLugares(
                             text = item.lugar.nombre,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                            color = TecsupTextPrimary,
+                            color = colorTextoPrincipal,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = item.lugar.categoria,
                             style = MaterialTheme.typography.bodySmall,
-                            color = TecsupTextSecondary
+                            color = colorTextoSecundario
                         )
                     }
 
@@ -123,7 +137,9 @@ fun ListaLugares(
                         text = textoDistancia,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (item.metros != null) TecsupCyanDark else TecsupTextSecondary
+                        color = if (item.metros != null) {
+                            if (modoOscuro) TecsupCyanLight else TecsupCyanDark
+                        } else colorTextoSecundario
                     )
                 }
             }

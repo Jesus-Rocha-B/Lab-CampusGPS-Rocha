@@ -67,10 +67,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.rocha.campusgps.R
 import com.rocha.campusgps.model.UbicacionUi
+import com.rocha.campusgps.ui.theme.CampusGPSTheme
 import com.rocha.campusgps.ui.theme.TecsupBorder
 import com.rocha.campusgps.ui.theme.TecsupCyan
 import com.rocha.campusgps.ui.theme.TecsupCyanContainer
 import com.rocha.campusgps.ui.theme.TecsupCyanDark
+import com.rocha.campusgps.ui.theme.TecsupCyanLight
 import com.rocha.campusgps.ui.theme.TecsupCyanSurface
 import com.rocha.campusgps.ui.theme.TecsupTextPrimary
 import com.rocha.campusgps.ui.theme.TecsupTextSecondary
@@ -87,7 +89,17 @@ fun PantallaMapa(vm: MapaViewModel) {
     val seleccionado by vm.seleccionado.collectAsState()
     val masCercano by vm.masCercano.collectAsState()
     val siguiendoEnVivo by vm.siguiendoEnVivo.collectAsState()
+    val modoOscuro by vm.modoOscuro.collectAsState()
     val contexto = LocalContext.current
+
+    // Paleta adaptativa para Modo Oscuro (Dark Slate & Cyan) y Modo Claro (Tecsup Cyan & White)
+    val fondoSuperficie = if (modoOscuro) Color(0xFF1E293B) else Color.White
+    val fondoApp = if (modoOscuro) Color(0xFF0F172A) else Color.White
+    val colorBorde = if (modoOscuro) Color(0xFF334155) else TecsupBorder
+    val colorTextoPrimario = if (modoOscuro) Color(0xFFF8FAFC) else TecsupTextPrimary
+    val colorTextoSecundario = if (modoOscuro) Color(0xFF94A3B8) else TecsupTextSecondary
+    val fondoIcono = if (modoOscuro) Color(0xFF0F172A) else TecsupCyanSurface
+    val tinteIcono = if (modoOscuro) Color(0xFF38BDF8) else TecsupCyanDark
 
     // Diálogo de confirmación para seguimiento en vivo
     var mostrarDialogoSeguimiento by remember { mutableStateOf(false) }
@@ -186,9 +198,9 @@ fun PantallaMapa(vm: MapaViewModel) {
         Dialog(onDismissRequest = { mostrarDialogoSeguimiento = false }) {
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = Color.White,
+                color = fondoSuperficie,
                 shadowElevation = 8.dp,
-                border = BorderStroke(1.dp, TecsupBorder),
+                border = BorderStroke(1.dp, colorBorde),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp)
@@ -208,7 +220,7 @@ fun PantallaMapa(vm: MapaViewModel) {
                             ) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = Color(0xFFFEF2F2),
+                                    color = if (modoOscuro) Color(0xFF451A1A) else Color(0xFFFEF2F2),
                                     border = BorderStroke(1.5.dp, Color(0xFFEF4444).copy(alpha = 0.4f)),
                                     modifier = Modifier.size(42.dp)
                                 ) {
@@ -226,14 +238,14 @@ fun PantallaMapa(vm: MapaViewModel) {
                                     text = "¿Detener seguimiento?",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = TecsupTextPrimary
+                                    color = colorTextoPrimario
                                 )
                             }
 
                             Text(
                                 text = "El seguimiento continuo está activo actualmente. Si lo detienes, se suspenderán las actualizaciones automáticas para ahorrar batería en tu dispositivo.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = TecsupTextSecondary,
+                                color = colorTextoSecundario,
                                 lineHeight = 20.sp,
                                 textAlign = TextAlign.Justify
                             )
@@ -245,14 +257,14 @@ fun PantallaMapa(vm: MapaViewModel) {
                                 OutlinedButton(
                                     onClick = { mostrarDialogoSeguimiento = false },
                                     shape = RoundedCornerShape(10.dp),
-                                    border = BorderStroke(1.dp, TecsupBorder),
+                                    border = BorderStroke(1.dp, colorBorde),
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(42.dp)
                                 ) {
                                     Text(
                                         text = "Continuar",
-                                        color = TecsupTextSecondary,
+                                        color = colorTextoSecundario,
                                         fontWeight = FontWeight.SemiBold,
                                         style = MaterialTheme.typography.bodySmall
                                     )
@@ -289,15 +301,15 @@ fun PantallaMapa(vm: MapaViewModel) {
                             ) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = TecsupCyanSurface,
-                                    border = BorderStroke(1.5.dp, TecsupBorder),
+                                    color = fondoIcono,
+                                    border = BorderStroke(1.5.dp, colorBorde),
                                     modifier = Modifier.size(42.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_radar_live),
                                             contentDescription = null,
-                                            tint = TecsupCyanDark,
+                                            tint = tinteIcono,
                                             modifier = Modifier.size(22.dp)
                                         )
                                     }
@@ -307,14 +319,14 @@ fun PantallaMapa(vm: MapaViewModel) {
                                     text = "Permiso de ubicación",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = TecsupTextPrimary
+                                    color = colorTextoPrimario
                                 )
                             }
 
                             Text(
                                 text = "Para iniciar el seguimiento en vivo de CampusGPS, primero debes conceder el permiso de acceso a la ubicación de tu dispositivo.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = TecsupTextSecondary,
+                                color = colorTextoSecundario,
                                 lineHeight = 20.sp,
                                 textAlign = TextAlign.Justify
                             )
@@ -326,14 +338,14 @@ fun PantallaMapa(vm: MapaViewModel) {
                                 OutlinedButton(
                                     onClick = { mostrarDialogoSeguimiento = false },
                                     shape = RoundedCornerShape(10.dp),
-                                    border = BorderStroke(1.dp, TecsupBorder),
+                                    border = BorderStroke(1.dp, colorBorde),
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(42.dp)
                                 ) {
                                     Text(
                                         text = "Cancelar",
-                                        color = TecsupTextSecondary,
+                                        color = colorTextoSecundario,
                                         fontWeight = FontWeight.SemiBold,
                                         style = MaterialTheme.typography.bodySmall
                                     )
@@ -375,15 +387,15 @@ fun PantallaMapa(vm: MapaViewModel) {
                             ) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = TecsupCyanSurface,
-                                    border = BorderStroke(1.5.dp, TecsupBorder),
+                                    color = fondoIcono,
+                                    border = BorderStroke(1.5.dp, colorBorde),
                                     modifier = Modifier.size(42.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_radar_live),
                                             contentDescription = null,
-                                            tint = TecsupCyanDark,
+                                            tint = tinteIcono,
                                             modifier = Modifier.size(22.dp)
                                         )
                                     }
@@ -393,14 +405,14 @@ fun PantallaMapa(vm: MapaViewModel) {
                                     text = "Activa tu ubicación",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = TecsupTextPrimary
+                                    color = colorTextoPrimario
                                 )
                             }
 
                             Text(
                                 text = "El GPS de tu dispositivo está apagado. Para que el mapa pueda seguirte en tiempo real mientras caminas por Tecsup, primero debes encender la ubicación en los ajustes de tu teléfono.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = TecsupTextSecondary,
+                                color = colorTextoSecundario,
                                 lineHeight = 20.sp,
                                 textAlign = TextAlign.Justify
                             )
@@ -412,14 +424,14 @@ fun PantallaMapa(vm: MapaViewModel) {
                                 OutlinedButton(
                                     onClick = { mostrarDialogoSeguimiento = false },
                                     shape = RoundedCornerShape(10.dp),
-                                    border = BorderStroke(1.dp, TecsupBorder),
+                                    border = BorderStroke(1.dp, colorBorde),
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(42.dp)
                                 ) {
                                     Text(
                                         text = "Cancelar",
-                                        color = TecsupTextSecondary,
+                                        color = colorTextoSecundario,
                                         fontWeight = FontWeight.SemiBold,
                                         style = MaterialTheme.typography.bodySmall
                                     )
@@ -456,15 +468,15 @@ fun PantallaMapa(vm: MapaViewModel) {
                             ) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = TecsupCyanSurface,
-                                    border = BorderStroke(1.5.dp, TecsupBorder),
+                                    color = fondoIcono,
+                                    border = BorderStroke(1.5.dp, colorBorde),
                                     modifier = Modifier.size(42.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_radar_live),
                                             contentDescription = null,
-                                            tint = TecsupCyanDark,
+                                            tint = tinteIcono,
                                             modifier = Modifier.size(22.dp)
                                         )
                                     }
@@ -474,14 +486,14 @@ fun PantallaMapa(vm: MapaViewModel) {
                                     text = "¿Activar seguimiento en vivo?",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = TecsupTextPrimary
+                                    color = colorTextoPrimario
                                 )
                             }
 
                             Text(
                                 text = "El GPS actualizará tu ubicación continua en tiempo real cada 3 segundos. Tu posición y las distancias a todos los lugares de Tecsup se recalcularán automáticamente mientras caminas.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = TecsupTextSecondary,
+                                color = colorTextoSecundario,
                                 lineHeight = 20.sp,
                                 textAlign = TextAlign.Justify
                             )
@@ -493,14 +505,14 @@ fun PantallaMapa(vm: MapaViewModel) {
                                 OutlinedButton(
                                     onClick = { mostrarDialogoSeguimiento = false },
                                     shape = RoundedCornerShape(10.dp),
-                                    border = BorderStroke(1.dp, TecsupBorder),
+                                    border = BorderStroke(1.dp, colorBorde),
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(42.dp)
                                 ) {
                                     Text(
                                         text = "Cancelar",
-                                        color = TecsupTextSecondary,
+                                        color = colorTextoSecundario,
                                         fontWeight = FontWeight.SemiBold,
                                         style = MaterialTheme.typography.bodySmall
                                     )
@@ -552,37 +564,80 @@ fun PantallaMapa(vm: MapaViewModel) {
                             contentScale = ContentScale.Fit
                         )
 
-                        // Icono interactivo circular a la derecha de CampusGPS (solo icono, sin puntos extra)
-                        Surface(
-                            onClick = { mostrarDialogoSeguimiento = true },
-                            shape = CircleShape,
-                            color = if (siguiendoEnVivo) Color(0xFFDCFCE7) else TecsupCyanSurface,
-                            border = BorderStroke(
-                                1.5.dp,
-                                if (siguiendoEnVivo) Color(0xFF22C55E) else TecsupBorder
-                            ),
+                        // Fila de acciones superiores: Conmutador Sol/Luna y Radar de seguimiento
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.padding(end = 6.dp)
                         ) {
-                            Box(
-                                modifier = Modifier.size(38.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_radar_live),
-                                    contentDescription = "Seguimiento en vivo",
-                                    tint = if (siguiendoEnVivo) Color(0xFF16A34A) else TecsupCyanDark,
-                                    modifier = Modifier.size(22.dp)
+                            // Conmutador interactivo Sol ☀️ / Luna 🌙 (Opción 6 de la guía)
+                            Surface(
+                                onClick = { vm.alternarModoOscuro() },
+                                shape = CircleShape,
+                                color = if (modoOscuro) Color(0xFF1E293B) else TecsupCyanSurface,
+                                border = BorderStroke(
+                                    1.5.dp,
+                                    if (modoOscuro) Color(0xFFF59E0B).copy(alpha = 0.6f) else TecsupBorder
                                 )
+                            ) {
+                                Box(
+                                    modifier = Modifier.size(38.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        painter = painterResource(
+                                            id = if (modoOscuro) R.drawable.ic_sun else R.drawable.ic_moon
+                                        ),
+                                        contentDescription = if (modoOscuro) "Activar modo claro" else "Activar modo oscuro",
+                                        tint = if (modoOscuro) Color(0xFFF59E0B) else TecsupCyanDark,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+
+                            // Icono interactivo circular para Seguimiento en Vivo
+                            Surface(
+                                onClick = { mostrarDialogoSeguimiento = true },
+                                shape = CircleShape,
+                                color = when {
+                                    siguiendoEnVivo -> Color(0xFFDCFCE7)
+                                    modoOscuro -> Color(0xFF1E293B)
+                                    else -> TecsupCyanSurface
+                                },
+                                border = BorderStroke(
+                                    1.5.dp,
+                                    when {
+                                        siguiendoEnVivo -> Color(0xFF22C55E)
+                                        modoOscuro -> colorBorde
+                                        else -> TecsupBorder
+                                    }
+                                )
+                            ) {
+                                Box(
+                                    modifier = Modifier.size(38.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_radar_live),
+                                        contentDescription = "Seguimiento en vivo",
+                                        tint = when {
+                                            siguiendoEnVivo -> Color(0xFF16A34A)
+                                            modoOscuro -> Color(0xFF38BDF8)
+                                            else -> TecsupCyanDark
+                                        },
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = fondoApp
                 )
             )
         },
-        containerColor = Color.White
+        containerColor = fondoApp
     ) { padding ->
         Box(
             modifier = Modifier
@@ -597,6 +652,7 @@ fun PantallaMapa(vm: MapaViewModel) {
                     masCercano = masCercano,
                     seleccionado = seleccionado,
                     radio = radioSeleccionado,
+                    modoOscuro = modoOscuro,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
@@ -605,20 +661,20 @@ fun PantallaMapa(vm: MapaViewModel) {
                 Spacer(modifier = Modifier.height(alturaSpacer))
             }
 
-            // 2. Panel blanco inferior estilo BottomSheet con bordes redondeados arriba (como en la imagen)
+            // 2. Panel inferior estilo BottomSheet con bordes redondeados arriba
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter),
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                color = Color.White,
+                color = fondoSuperficie,
                 shadowElevation = 10.dp,
-                border = BorderStroke(1.dp, TecsupBorder.copy(alpha = 0.8f))
+                border = BorderStroke(1.dp, colorBorde.copy(alpha = 0.8f))
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.White)
+                        .background(fondoSuperficie)
                 ) {
                     // Tirador / Handle bar superior interactivo (subir y bajar al pulsar)
                     Row(
@@ -633,11 +689,14 @@ fun PantallaMapa(vm: MapaViewModel) {
                             modifier = Modifier
                                 .width(42.dp)
                                 .height(5.dp)
-                                .background(Color(0xFFCBD5E1), RoundedCornerShape(3.dp))
+                                .background(
+                                    if (modoOscuro) Color(0xFF475569) else Color(0xFFCBD5E1),
+                                    RoundedCornerShape(3.dp)
+                                )
                         )
                     }
 
-                    // Fila horizontal de Chips de filtrado (Celeste y Blanco)
+                    // Fila horizontal de Chips de filtrado (Celeste y Blanco / Modo Oscuro)
                     LazyRow(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -659,15 +718,15 @@ fun PantallaMapa(vm: MapaViewModel) {
                                 border = FilterChipDefaults.filterChipBorder(
                                     enabled = true,
                                     selected = esSeleccionado,
-                                    borderColor = TecsupBorder,
+                                    borderColor = colorBorde,
                                     selectedBorderColor = TecsupCyan,
                                     borderWidth = if (esSeleccionado) 1.5.dp else 1.dp
                                 ),
                                 colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = Color.White,
-                                    selectedContainerColor = TecsupCyanContainer,
-                                    labelColor = TecsupTextSecondary,
-                                    selectedLabelColor = TecsupCyanDark
+                                    containerColor = fondoApp,
+                                    selectedContainerColor = if (modoOscuro) Color(0xFF0369A1) else TecsupCyanContainer,
+                                    labelColor = colorTextoSecundario,
+                                    selectedLabelColor = if (modoOscuro) Color.White else TecsupCyanDark
                                 )
                             )
                         }
@@ -686,17 +745,25 @@ fun PantallaMapa(vm: MapaViewModel) {
                                 text = "Radio:",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = TecsupTextSecondary
+                                color = colorTextoSecundario
                             )
                             vm.radiosDisponibles.forEach { r ->
                                 val esActivo = r == radioSeleccionado
                                 val etiqueta = r?.let { "${it}m" } ?: "Todo"
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = if (esActivo) TecsupCyan else TecsupCyanSurface,
+                                    color = when {
+                                        esActivo -> TecsupCyan
+                                        modoOscuro -> Color(0xFF0F172A)
+                                        else -> TecsupCyanSurface
+                                    },
                                     border = BorderStroke(
                                         1.dp,
-                                        if (esActivo) TecsupCyan else TecsupBorder
+                                        when {
+                                            esActivo -> TecsupCyan
+                                            modoOscuro -> colorBorde
+                                            else -> TecsupBorder
+                                        }
                                     ),
                                     modifier = Modifier.clickable { vm.seleccionarRadio(r) }
                                 ) {
@@ -704,7 +771,11 @@ fun PantallaMapa(vm: MapaViewModel) {
                                         text = etiqueta,
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = if (esActivo) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (esActivo) Color.White else TecsupCyanDark,
+                                        color = when {
+                                            esActivo -> Color.White
+                                            modoOscuro -> Color(0xFF38BDF8)
+                                            else -> TecsupCyanDark
+                                        },
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                                     )
                                 }
@@ -712,7 +783,7 @@ fun PantallaMapa(vm: MapaViewModel) {
                         }
                     }
 
-                    // Controles centrales (Celeste y Blanco)
+                    // Controles centrales (Celeste y Blanco / Modo Oscuro)
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -761,10 +832,10 @@ fun PantallaMapa(vm: MapaViewModel) {
                                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
                                 border = BorderStroke(
                                     1.5.dp,
-                                    if (masCercano != null) TecsupCyan else TecsupBorder
+                                    if (masCercano != null) TecsupCyan else colorBorde
                                 ),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = TecsupCyanDark,
+                                    contentColor = if (modoOscuro) Color(0xFF38BDF8) else TecsupCyanDark,
                                     disabledContentColor = Color.Gray
                                 ),
                                 modifier = Modifier
@@ -789,7 +860,7 @@ fun PantallaMapa(vm: MapaViewModel) {
                                 text = "Más cercano: ${cercano.nombre}$textoDist",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
-                                color = TecsupCyanDark,
+                                color = if (modoOscuro) Color(0xFF38BDF8) else TecsupCyanDark,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -815,11 +886,12 @@ fun PantallaMapa(vm: MapaViewModel) {
                         }
                     }
 
-                    // 4. Lista fija abajo animada (Fondo blanco y tarjetas limpias)
+                    // 4. Lista fija abajo animada
                     ListaLugares(
                         lugares = lugaresFiltrados,
                         seleccionado = seleccionado,
                         onSeleccionar = { vm.seleccionar(it) },
+                        modoOscuro = modoOscuro,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(alturaLista)

@@ -27,6 +27,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
@@ -42,6 +43,30 @@ import com.rocha.campusgps.ui.theme.TecsupCyan
 import com.rocha.campusgps.ui.theme.TecsupCyanDark
 import kotlinx.coroutines.launch
 
+// Estilo visual nocturno oficial de Google Maps para modo oscuro
+private const val ESTILO_MAPA_OSCURO = """
+[
+  {"elementType": "geometry", "stylers": [{"color": "#242f3e"}]},
+  {"elementType": "labels.text.fill", "stylers": [{"color": "#746855"}]},
+  {"elementType": "labels.text.stroke", "stylers": [{"color": "#242f3e"}]},
+  {"featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [{"color": "#d59563"}]},
+  {"featureType": "poi", "elementType": "labels.text.fill", "stylers": [{"color": "#d59563"}]},
+  {"featureType": "poi.park", "elementType": "geometry", "stylers": [{"color": "#263c3f"}]},
+  {"featureType": "poi.park", "elementType": "labels.text.fill", "stylers": [{"color": "#6b9a76"}]},
+  {"featureType": "road", "elementType": "geometry", "stylers": [{"color": "#38414e"}]},
+  {"featureType": "road", "elementType": "geometry.stroke", "stylers": [{"color": "#212a37"}]},
+  {"featureType": "road", "elementType": "labels.text.fill", "stylers": [{"color": "#9ca5b3"}]},
+  {"featureType": "road.highway", "elementType": "geometry", "stylers": [{"color": "#746855"}]},
+  {"featureType": "road.highway", "elementType": "geometry.stroke", "stylers": [{"color": "#1f2835"}]},
+  {"featureType": "road.highway", "elementType": "labels.text.fill", "stylers": [{"color": "#f3d19c"}]},
+  {"featureType": "transit", "elementType": "geometry", "stylers": [{"color": "#2f3948"}]},
+  {"featureType": "transit.station", "elementType": "labels.text.fill", "stylers": [{"color": "#d59563"}]},
+  {"featureType": "water", "elementType": "geometry", "stylers": [{"color": "#17263c"}]},
+  {"featureType": "water", "elementType": "labels.text.fill", "stylers": [{"color": "#515c6d"}]},
+  {"featureType": "water", "elementType": "labels.text.stroke", "stylers": [{"color": "#17263c"}]}
+]
+"""
+
 @Composable
 fun MapaUbicacion(
     estado: UbicacionUi,
@@ -49,6 +74,7 @@ fun MapaUbicacion(
     masCercano: Lugar?,
     seleccionado: Int?,
     radio: Int? = null,
+    modoOscuro: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -88,7 +114,8 @@ fun MapaUbicacion(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = camara,
             properties = MapProperties(
-                isMyLocationEnabled = estado is UbicacionUi.Lista
+                isMyLocationEnabled = estado is UbicacionUi.Lista,
+                mapStyleOptions = if (modoOscuro) MapStyleOptions(ESTILO_MAPA_OSCURO) else null
             ),
             uiSettings = MapUiSettings(
                 zoomControlsEnabled = false, // Desactivamos los controles nativos grises
@@ -101,8 +128,8 @@ fun MapaUbicacion(
                 Circle(
                     center = LatLng(estado.posicion.latitud, estado.posicion.longitud),
                     radius = radio.toDouble(),
-                    fillColor = TecsupCyan.copy(alpha = 0.15f),
-                    strokeColor = TecsupCyan,
+                    fillColor = TecsupCyan.copy(alpha = if (modoOscuro) 0.25f else 0.15f),
+                    strokeColor = if (modoOscuro) Color(0xFF38BDF8) else TecsupCyan,
                     strokeWidth = 3f
                 )
             }
@@ -148,15 +175,15 @@ fun MapaUbicacion(
             }
         }
 
-        // Controles de zoom personalizados (+ y -) con diseño Tecsup (Celeste y Blanco)
+        // Controles de zoom personalizados (+ y -) con diseño Tecsup (Celeste y Blanco / Modo Oscuro)
         Surface(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(end = 12.dp, top = 68.dp),
             shape = RoundedCornerShape(10.dp),
-            color = Color.White,
+            color = if (modoOscuro) Color(0xFF1E293B) else Color.White,
             shadowElevation = 4.dp,
-            border = BorderStroke(1.dp, TecsupBorder)
+            border = BorderStroke(1.dp, if (modoOscuro) Color(0xFF334155) else TecsupBorder)
         ) {
             Column {
                 IconButton(
@@ -171,7 +198,7 @@ fun MapaUbicacion(
                         text = "+",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TecsupCyanDark
+                        color = if (modoOscuro) Color(0xFF38BDF8) else TecsupCyanDark
                     )
                 }
 
@@ -179,7 +206,7 @@ fun MapaUbicacion(
                     modifier = Modifier
                         .width(38.dp)
                         .height(1.dp)
-                        .background(TecsupBorder)
+                        .background(if (modoOscuro) Color(0xFF334155) else TecsupBorder)
                 )
 
                 IconButton(
@@ -194,7 +221,7 @@ fun MapaUbicacion(
                         text = "−",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TecsupCyanDark
+                        color = if (modoOscuro) Color(0xFF38BDF8) else TecsupCyanDark
                     )
                 }
             }

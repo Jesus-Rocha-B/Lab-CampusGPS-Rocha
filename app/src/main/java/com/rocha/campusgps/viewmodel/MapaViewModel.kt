@@ -50,6 +50,14 @@ class MapaViewModel(
     private val _radioSeleccionado = MutableStateFlow<Int?>(null)
     val radioSeleccionado: StateFlow<Int?> = _radioSeleccionado.asStateFlow()
 
+    // Mejora 5 (Opción 6 de la guía): Modo oscuro interactivo con estilo Google Maps
+    private val _modoOscuro = MutableStateFlow(false)
+    val modoOscuro: StateFlow<Boolean> = _modoOscuro.asStateFlow()
+
+    fun alternarModoOscuro() {
+        _modoOscuro.value = !_modoOscuro.value
+    }
+
     val lugaresFiltrados: StateFlow<List<LugarConDistancia>> = combine(
         _lugares,
         _categoriaSeleccionada,
