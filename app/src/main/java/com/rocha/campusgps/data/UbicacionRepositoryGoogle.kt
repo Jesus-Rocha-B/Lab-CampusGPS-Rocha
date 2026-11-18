@@ -2,6 +2,8 @@ package com.rocha.campusgps.data
 
 import android.annotation.SuppressLint
 import android.content.Context
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -12,6 +14,11 @@ class UbicacionRepositoryGoogle(context: Context) : UbicacionRepository {
 
     private val appContext = context.applicationContext
     private val cliente = LocationServices.getFusedLocationProviderClient(appContext)
+
+    override fun playServicesDisponible(): Boolean {
+        val disponibilidad = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(appContext)
+        return disponibilidad == ConnectionResult.SUCCESS
+    }
 
     @SuppressLint("MissingPermission")
     override suspend fun obtenerPosicion(): Result<Posicion> = runCatching {

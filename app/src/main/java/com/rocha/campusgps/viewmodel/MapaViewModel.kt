@@ -7,6 +7,7 @@ import com.rocha.campusgps.data.UbicacionRepository
 import com.rocha.campusgps.model.Lugar
 import com.rocha.campusgps.model.LugarConDistancia
 import com.rocha.campusgps.model.Posicion
+import com.rocha.campusgps.model.TipoError
 import com.rocha.campusgps.model.UbicacionUi
 import com.rocha.campusgps.util.distanciaMetros
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,14 @@ class MapaViewModel(
     val seleccionado: StateFlow<Int?> = _seleccionado.asStateFlow()
 
     fun buscar() {
+        if (!ubicacionRepo.playServicesDisponible()) {
+            _estado.value = UbicacionUi.Error(
+                mensaje = "Este dispositivo no tiene Google Play Services.",
+                tipo = TipoError.SIN_PLAY_SERVICES
+            )
+            return
+        }
+
         _estado.value = UbicacionUi.Buscando
         viewModelScope.launch {
             ubicacionRepo.obtenerPosicion()
@@ -41,7 +50,12 @@ class MapaViewModel(
                     _estado.value = UbicacionUi.Lista(it)
                     actualizarDistancias(it)
                 }
-                .onFailure { _estado.value = UbicacionUi.Error(mensajeDe(it)) }
+                .onFailure {
+                    _estado.value = UbicacionUi.Error(
+                        mensaje = mensajeDe(it),
+                        tipo = tipoErrorDe(it)
+                    )
+                }
         }
     }
 
@@ -55,7 +69,10 @@ class MapaViewModel(
     }
 
     fun permisoDenegado() {
-        _estado.value = UbicacionUi.Error("Sin permiso de ubicación no puedo mostrar dónde estás")
+        _estado.value = UbicacionUi.Error(
+            mensaje = "Sin permiso de ubicación no puedo mostrar dónde estás",
+            tipo = TipoError.SIN_PERMISO
+        )
     }
 
     fun seleccionar(id: Int?) {
@@ -68,6 +85,13 @@ class MapaViewModel(
 
     private fun mensajeDe(e: Throwable): String = when (e) {
         is SecurityException -> "Falta el permiso de ubicación"
+        is IllegalStateException -> e.message ?: "No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo"
         else -> e.message ?: "No se pudo obtener la ubicación"
+    }
+
+    private fun tipoErrorDe(e: Throwable): TipoError = when (e) {
+        is SecurityException -> TipoError.SIN_PERMISO
+        is IllegalStateException -> TipoError.GPS_APAGADO
+        else -> TipoError.OTRO
     }
 }

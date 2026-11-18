@@ -1,7 +1,10 @@
 package com.rocha.campusgps.ui
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -74,6 +77,16 @@ fun PantallaMapa(vm: MapaViewModel) {
         }
     }
 
+    fun abrirAjustes() {
+        val intent = Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.fromParts("package", contexto.packageName, null)
+        ).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        contexto.startActivity(intent)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -90,7 +103,7 @@ fun PantallaMapa(vm: MapaViewModel) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Mapa arriba ocupando el espacio libre (weight 1f)
+            // 1. Mapa arriba ocupando el espacio libre (weight 1f)
             MapaUbicacion(
                 estado = estado,
                 lugares = lugares,
@@ -101,7 +114,7 @@ fun PantallaMapa(vm: MapaViewModel) {
                     .weight(1f)
             )
 
-            // Controles centrales
+            // 2. Controles centrales
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -142,10 +155,10 @@ fun PantallaMapa(vm: MapaViewModel) {
                     }
 
                     is UbicacionUi.Error -> {
-                        Text(
-                            text = e.mensaje,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
+                        MensajeError(
+                            error = e,
+                            onReintentar = { alPulsar() },
+                            onAbrirAjustes = { abrirAjustes() }
                         )
                     }
 
@@ -153,7 +166,7 @@ fun PantallaMapa(vm: MapaViewModel) {
                 }
             }
 
-            // Lista fija abajo (220.dp)
+            // 3. Lista fija abajo (220.dp)
             ListaLugares(
                 lugares = lugares,
                 seleccionado = seleccionado,
