@@ -28,6 +28,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -83,8 +84,13 @@ fun MapaUbicacion(
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = camara,
+            properties = MapProperties(
+                isMyLocationEnabled = estado is UbicacionUi.Lista
+            ),
             uiSettings = MapUiSettings(
-                zoomControlsEnabled = false // Desactivamos los controles nativos grises
+                zoomControlsEnabled = false, // Desactivamos los controles nativos grises
+                compassEnabled = true,
+                myLocationButtonEnabled = estado is UbicacionUi.Lista
             )
         ) {
             // Marcador propio "Estás aquí" en rojo (por defecto)
@@ -132,7 +138,7 @@ fun MapaUbicacion(
         Surface(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(end = 12.dp, top = 12.dp),
+                .padding(end = 12.dp, top = 68.dp),
             shape = RoundedCornerShape(10.dp),
             color = Color.White,
             shadowElevation = 4.dp,
